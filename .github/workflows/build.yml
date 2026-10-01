@@ -28,6 +28,17 @@ jobs:
         run: ./configure.sh && make -j2
       - name: Smoke test
         run: ./tests/smoke.sh
+      - name: Build installable Debian package
+        run: ./packaging/build-deb.sh
+      - name: Inspect Debian package
+        run: |
+          dpkg-deb --info packages/*.deb
+          dpkg-deb --contents packages/*.deb
+      - name: Upload Debian package
+        uses: actions/upload-artifact@v4
+        with:
+          name: forkcastra-ubuntu-${{ matrix.ubuntu }}-amd64
+          path: packages/*.deb
       - name: Verify clean rebuild without softcam
         run: |
           make distclean

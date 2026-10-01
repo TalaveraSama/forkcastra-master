@@ -1,0 +1,23 @@
+#!/bin/sh
+set -e
+
+if ! getent group astra >/dev/null 2>&1; then
+    addgroup --system astra >/dev/null
+fi
+if ! getent passwd astra >/dev/null 2>&1; then
+    adduser --system --ingroup astra --home /var/lib/astra --no-create-home \
+        --disabled-login --disabled-password --gecos "Forkcastra service" astra >/dev/null
+fi
+
+install -d -o astra -g astra -m 0750 /var/lib/astra /var/log/astra
+if [ -f /etc/astra/astra.lua ]; then
+    chown root:astra /etc/astra/astra.lua
+    chmod 0640 /etc/astra/astra.lua
+fi
+
+if command -v systemctl >/dev/null 2>&1; then
+    systemctl daemon-reload || true
+    systemctl enable astra.service >/dev/null 2>&1 || true
+fi
+
+exit 0

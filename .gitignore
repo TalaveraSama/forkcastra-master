@@ -5,4 +5,5 @@
 /temp
 /Makefile
 /config.h
+/packages/
 *.sublime-workspace

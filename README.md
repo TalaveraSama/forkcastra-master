@@ -37,7 +37,18 @@ sudo systemctl start astra
 sudo systemctl status astra
 ```
 
-The example configuration does not start any stream. Do not expose the legacy
-HTTP module as an administrative interface on an untrusted network. See
+To create an installable `.deb` after building:
+
+```sh
+./packaging/build-deb.sh
+sudo apt install ./packages/forkcastra_*.deb
+sudoedit /etc/astra/astra.lua
+sudo systemctl start astra
+```
+
+The package enables the service for the next boot but deliberately does not
+start it during installation. The example configuration does not start any
+stream. Do not expose the legacy HTTP module as an administrative interface on
+an untrusted network. See
 [`docs/AUDITORIA_MODERNIZACION.md`](docs/AUDITORIA_MODERNIZACION.md) for the
 panel architecture and security plan.
