@@ -1,0 +1,13 @@
+-- Forkcastra configuration example.
+-- Copy to /etc/astra/astra.lua and add channels only from trusted input.
+
+dofile("/usr/share/astra/stream.lua")
+
+-- Example (disabled by default):
+-- make_channel({
+--     name = "Demo multicast relay",
+--     input = { "udp://239.10.10.1:1234" },
+--     output = { "udp://239.10.20.1:1234" },
+-- })
+
+log.info("Configuration loaded")

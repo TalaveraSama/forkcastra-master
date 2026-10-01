@@ -1,0 +1,36 @@
+name: Build and smoke test
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  ubuntu:
+    name: Ubuntu ${{ matrix.ubuntu }} / amd64
+    runs-on: ubuntu-latest
+    container: ubuntu:${{ matrix.ubuntu }}
+    strategy:
+      fail-fast: false
+      matrix:
+        ubuntu: ["20.04", "22.04", "24.04"]
+    steps:
+      - name: Install build dependencies
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          apt-get update
+          apt-get install --no-install-recommends -y ca-certificates gcc make libc6-dev libssl-dev
+      - uses: actions/checkout@v4
+      - name: Build
+        run: ./configure.sh && make -j2
+      - name: Smoke test
+        run: ./tests/smoke.sh
+      - name: Verify clean rebuild without softcam
+        run: |
+          make distclean
+          ./configure.sh --with-modules=modules/astra:modules/file:modules/http:modules/mpegts:modules/udp
+          make -j2
+          ./tests/smoke.sh

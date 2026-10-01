@@ -13,3 +13,31 @@ Astra consists of the following components:
 *   Modules is a set of high-performance units that
     carries out specific functions
 *   Lua is a scripting language to build a business logic for applications
+
+## Build on Ubuntu Server
+
+Supported targets are Ubuntu 20.04, 22.04 and 24.04 on amd64. The CI workflow
+builds and smoke-tests all three releases.
+
+```sh
+sudo apt-get update
+sudo apt-get install build-essential libssl-dev
+./configure.sh
+make -j"$(nproc)"
+./tests/smoke.sh
+```
+
+The OpenSSL development package is optional; without it the legacy `newcamd`
+module is disabled. To install the engine and its hardened systemd service:
+
+```sh
+sudo ./deploy/install.sh
+sudoedit /etc/astra/astra.lua
+sudo systemctl start astra
+sudo systemctl status astra
+```
+
+The example configuration does not start any stream. Do not expose the legacy
+HTTP module as an administrative interface on an untrusted network. See
+[`docs/AUDITORIA_MODERNIZACION.md`](docs/AUDITORIA_MODERNIZACION.md) for the
+panel architecture and security plan.
