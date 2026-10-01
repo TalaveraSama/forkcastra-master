@@ -62,11 +62,11 @@ check_sse2()
 
 if check_sse2 ; then
     CFLAGS="$CFLAGS -DFFDECSA -DPARALLEL_MODE=1286"
-    CFLAGS+=" -DDVBCSA -DDVBCSA_USE_SSE=1"
+    CFLAGS="$CFLAGS -DDVBCSA -DDVBCSA_USE_SSE=1"
 else
     echo "$MODULE: warning: SSE2 is not found" >&2
     CFLAGS="$CFLAGS -DFFDECSA -DPARALLEL_MODE=642"
-    CFLAGS+=" -DDVBCSA -DDVBCSA_USE_UINT32=1"
+    CFLAGS="$CFLAGS -DDVBCSA -DDVBCSA_USE_UINT32=1"
 fi
 
 posix_memalign_test_c()
@@ -84,5 +84,5 @@ check_posix_memalign()
 }
         
 if check_posix_memalign ; then
-    CFLAGS+=" -DHAVE_POSIX_MEMALIGN=1"
+    CFLAGS="$CFLAGS -DHAVE_POSIX_MEMALIGN=1"
 fi
