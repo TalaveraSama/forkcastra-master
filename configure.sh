@@ -12,6 +12,7 @@ Usage: $0 [OPTIONS]
 
     --cc=GCC                    - custom C compiler (cross-compile)
     --build-static              - build static binary
+    --portable                  - omit host-specific CPU flags (for packages)
 
     --module-pack=PATH          - build module package
 
@@ -38,6 +39,7 @@ ARG_CC=0
 ARG_MODULES="*"
 ARG_INLINE_SCRIPT=""
 ARG_BUILD_STATIC=0
+ARG_PORTABLE=0
 ARG_CFLAGS=""
 ARG_LDFLAGS=""
 ARG_MODULE_PACK=""
@@ -69,6 +71,9 @@ while [ $# -ne 0 ] ; do
             ;;
         "--build-static")
             ARG_BUILD_STATIC=1
+            ;;
+        "--portable")
+            ARG_PORTABLE=1
             ;;
         "CFLAGS="*)
             ARG_CFLAGS=`echo $OPT | sed -e 's/^[A-Z]*=//'`
@@ -120,7 +125,7 @@ fi
 CFLAGS="$CFLAGS_DEBUG -I. -Wall -Wextra -pedantic \
 -fno-builtin -funit-at-a-time -ffast-math"
 
-if [ $ARG_CC -eq 0 -a -z "$ARG_MODULE_PACK" ]; then
+if [ $ARG_CC -eq 0 ] && [ $ARG_PORTABLE -eq 0 ] && [ -z "$ARG_MODULE_PACK" ]; then
    CHECKCPU_APP="$SRCDIR/cpucheck"
    $APP_C -o $CHECKCPU_APP $SRCDIR/cpucheck.c
    if [ $? -eq 0 ] ; then

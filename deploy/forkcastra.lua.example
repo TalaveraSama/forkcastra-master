@@ -1,7 +1,7 @@
 -- Forkcastra configuration example.
--- Copy to /etc/astra/astra.lua and add channels only from trusted input.
+-- Copy to /etc/forkcastra/forkcastra.lua and add channels only from trusted input.
 
-dofile("/usr/share/astra/stream.lua")
+dofile("/usr/share/forkcastra/stream.lua")
 
 -- Example (disabled by default):
 -- make_channel({

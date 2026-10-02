@@ -1,23 +1,23 @@
 #!/bin/sh
 set -e
 
-if ! getent group astra >/dev/null 2>&1; then
-    addgroup --system astra >/dev/null
+if ! getent group forkcastra >/dev/null 2>&1; then
+    addgroup --system forkcastra >/dev/null
 fi
-if ! getent passwd astra >/dev/null 2>&1; then
-    adduser --system --ingroup astra --home /var/lib/astra --no-create-home \
-        --disabled-login --disabled-password --gecos "Forkcastra service" astra >/dev/null
+if ! getent passwd forkcastra >/dev/null 2>&1; then
+    adduser --system --ingroup forkcastra --home /var/lib/forkcastra --no-create-home \
+        --disabled-login --disabled-password --gecos "Forkcastra service" forkcastra >/dev/null
 fi
 
-install -d -o astra -g astra -m 0750 /var/lib/astra /var/log/astra
-if [ -f /etc/astra/astra.lua ]; then
-    chown root:astra /etc/astra/astra.lua
-    chmod 0640 /etc/astra/astra.lua
+install -d -o forkcastra -g forkcastra -m 0750 /var/lib/forkcastra /var/log/forkcastra
+if [ -f /etc/forkcastra/forkcastra.lua ]; then
+    chown root:forkcastra /etc/forkcastra/forkcastra.lua
+    chmod 0640 /etc/forkcastra/forkcastra.lua
 fi
 
 if command -v systemctl >/dev/null 2>&1; then
     systemctl daemon-reload || true
-    systemctl enable astra.service >/dev/null 2>&1 || true
+    systemctl enable forkcastra.service >/dev/null 2>&1 || true
 fi
 
 exit 0

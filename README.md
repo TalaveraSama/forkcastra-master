@@ -32,9 +32,9 @@ module is disabled. To install the engine and its hardened systemd service:
 
 ```sh
 sudo ./deploy/install.sh
-sudoedit /etc/astra/astra.lua
-sudo systemctl start astra
-sudo systemctl status astra
+sudoedit /etc/forkcastra/forkcastra.lua
+sudo systemctl start forkcastra
+sudo systemctl status forkcastra
 ```
 
 To create an installable `.deb` after building:
@@ -42,9 +42,14 @@ To create an installable `.deb` after building:
 ```sh
 ./packaging/build-deb.sh
 sudo apt install ./packages/forkcastra_*.deb
-sudoedit /etc/astra/astra.lua
-sudo systemctl start astra
+sudoedit /etc/forkcastra/forkcastra.lua
+sudo systemctl start forkcastra
 ```
+
+The package installs as `/usr/bin/forkcastra`, uses
+`/etc/forkcastra/forkcastra.lua` and runs as `forkcastra.service`. It can
+therefore coexist with a vendor Astra 5.x installation. Do not configure both
+services to claim the same DVB adapter, TCP/UDP port or multicast output.
 
 The package enables the service for the next boot but deliberately does not
 start it during installation. The example configuration does not start any

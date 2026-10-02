@@ -6,9 +6,9 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=astra
-Group=astra
-ExecStart=/usr/bin/astra /etc/astra/astra.lua
+User=forkcastra
+Group=forkcastra
+ExecStart=/usr/bin/forkcastra /etc/forkcastra/forkcastra.lua
 ExecReload=/bin/kill -HUP $MAINPID
 Restart=on-failure
 RestartSec=5s
@@ -16,7 +16,7 @@ TimeoutStopSec=20s
 NoNewPrivileges=true
 PrivateTmp=true
 # Keep /dev visible for optional DVB adapters; device permissions are controlled
-# by the astra user's group membership and udev rules.
+# by the forkcastra user's group membership and udev rules.
 ProtectSystem=strict
 ProtectHome=true
 ProtectKernelTunables=true
@@ -27,7 +27,7 @@ RestrictSUIDSGID=true
 RestrictRealtime=true
 LockPersonality=true
 MemoryDenyWriteExecute=true
-ReadWritePaths=/var/lib/astra /var/log/astra
+ReadWritePaths=/var/lib/forkcastra /var/log/forkcastra
 CapabilityBoundingSet=
 AmbientCapabilities=
 
