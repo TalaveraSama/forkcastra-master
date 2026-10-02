@@ -2,7 +2,31 @@
 set -eu
 SOURCE=/var/lib/forkcastra/generated.lua
 TARGET=/etc/forkcastra/forkcastra.lua
+BACKUP=/var/lib/forkcastra/last-working.lua
+
 [ -f "$SOURCE" ] || { echo "generated configuration is missing" >&2; exit 1; }
 [ "$(stat -c %U "$SOURCE")" = forkcastra ] || { echo "invalid configuration owner" >&2; exit 1; }
+
+if [ -f "$TARGET" ]; then
+    cp -p "$TARGET" "$BACKUP"
+fi
 install -o root -g forkcastra -m 0640 "$SOURCE" "$TARGET"
 systemctl restart forkcastra.service
+sleep 3
+if systemctl is-active --quiet forkcastra.service; then
+    exit 0
+fi
+
+echo "Forkcastra failed to start; restoring previous configuration" >&2
+if [ -f "$BACKUP" ]; then
+    install -o root -g forkcastra -m 0640 "$BACKUP" "$TARGET"
+else
+    cat > "$TARGET" <<'EOF'
+dofile("/usr/share/forkcastra/stream.lua")
+log.info("Empty recovery configuration loaded")
+EOF
+    chown root:forkcastra "$TARGET"
+    chmod 0640 "$TARGET"
+fi
+systemctl restart forkcastra.service || true
+exit 1

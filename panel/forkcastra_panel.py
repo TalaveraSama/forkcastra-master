@@ -14,6 +14,7 @@ import shutil
 from http import cookies
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from urllib.parse import urlparse
 
 DB = Path(os.environ.get("FORKCASTRA_PANEL_DB", "/var/lib/forkcastra/panel.db"))
 STATIC = Path(os.environ.get("FORKCASTRA_PANEL_STATIC", "/usr/share/forkcastra/panel"))
@@ -73,7 +74,17 @@ def service_state():
 def valid_url(value, allowed):
     if not isinstance(value, str) or not 4 <= len(value) <= 1024 or "\n" in value or "\r" in value:
         return False
-    return any(value.startswith(scheme + "://") for scheme in allowed)
+    parsed = urlparse(value)
+    if parsed.scheme not in allowed:
+        return False
+    if parsed.scheme in ("udp", "http"):
+        try:
+            return bool(parsed.hostname) and parsed.port is not None and 1 <= parsed.port <= 65535
+        except ValueError:
+            return False
+    if parsed.scheme == "file":
+        return bool(parsed.path) and parsed.path.startswith("/")
+    return False
 
 
 def lua_string(value):
@@ -221,7 +232,7 @@ class Handler(BaseHTTPRequestHandler):
             config = Path("/etc/forkcastra/forkcastra.lua")
             with connect() as db:
                 count = db.execute("SELECT count(*) FROM channels").fetchone()[0]
-            return self.json({"service": service_state(), "config": str(config), "configured": config.exists(), "version": "4.0.282-7", "channels": count})
+            return self.json({"service": service_state(), "config": str(config), "configured": config.exists(), "version": "4.0.282-8", "channels": count})
         if self.path == "/api/channels":
             if not self.session():
                 return self.json({"error": "unauthorized"}, 401)

@@ -47,6 +47,8 @@ with tempfile.TemporaryDirectory() as tmp:
     assert request("/api/system")[1]["hostname"]
     assert request("/api/outputs")[1]["outputs"] == []
     assert panel.playlist([("Canal", "udp://192.168.1.20:1234")]).startswith("#EXTM3U")
+    assert panel.valid_url("udp://192.168.1.20:1234", ("udp",))
+    assert not panel.valid_url("http://:1234/", ("http",))
     created = request("/api/channels", {"csrf": session["csrf"], "name": "News", "input": "udp://239.0.0.1:1234", "output": "udp://239.0.0.2:1234"})[1]
     channels = request("/api/channels")[1]["channels"]
     assert created["id"] == channels[0]["id"] and channels[0]["name"] == "News"

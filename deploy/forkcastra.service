@@ -8,6 +8,7 @@ Wants=network-online.target
 Type=simple
 User=forkcastra
 Group=forkcastra
+SupplementaryGroups=video
 RuntimeDirectory=forkcastra
 RuntimeDirectoryMode=0750
 ExecStart=/usr/bin/forkcastra /etc/forkcastra/forkcastra.lua

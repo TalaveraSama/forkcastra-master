@@ -7,7 +7,7 @@ ARCH=${ARCH:-$(dpkg --print-architecture)}
 MAJOR=$(sed -n 's/^#define ASTRA_VERSION_MAJOR \([0-9][0-9]*\)$/\1/p' "$ROOT/version.h")
 MINOR=$(sed -n 's/^#define ASTRA_VERSION_MINOR \([0-9][0-9]*\)$/\1/p' "$ROOT/version.h")
 DEV=$(sed -n 's/^#define ASTRA_VERSION_DEV \([0-9][0-9]*\)$/\1/p' "$ROOT/version.h")
-VERSION=${VERSION:-"$MAJOR.$MINOR.$DEV-7"}
+VERSION=${VERSION:-"$MAJOR.$MINOR.$DEV-8"}
 PKG="forkcastra_${VERSION}_${ARCH}"
 STAGE="$OUT/.stage-$PKG"
 DEB="$OUT/$PKG.deb"
@@ -38,7 +38,7 @@ install -m 0644 "$ROOT/panel/static/"* "$STAGE/usr/share/forkcastra/panel/"
 install -m 0644 "$ROOT/COPYING" "$STAGE/usr/share/doc/forkcastra/copyright"
 install -m 0644 "$ROOT/README.md" "$STAGE/usr/share/doc/forkcastra/README.md"
 install -m 0644 "$ROOT/docs/AUDITORIA_MODERNIZACION.md" "$STAGE/usr/share/doc/forkcastra/AUDITORIA_MODERNIZACION.md"
-install -m 0644 "$ROOT/docs/RELEASE_4.0.282-7.md" "$STAGE/usr/share/doc/forkcastra/RELEASE.md"
+install -m 0644 "$ROOT/docs/RELEASE_4.0.282-8.md" "$STAGE/usr/share/doc/forkcastra/RELEASE.md"
 
 INSTALLED_SIZE=$(du -sk "$STAGE" | cut -f1)
 cat > "$STAGE/DEBIAN/control" <<EOF
