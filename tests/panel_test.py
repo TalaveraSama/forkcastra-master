@@ -44,6 +44,9 @@ with tempfile.TemporaryDirectory() as tmp:
     session = request("/api/session")[1]
     assert session["authenticated"] is True
     assert request("/api/status")[0] == 200
+    assert request("/api/system")[1]["hostname"]
+    assert request("/api/outputs")[1]["outputs"] == []
+    assert panel.playlist([("Canal", "udp://192.168.1.20:1234")]).startswith("#EXTM3U")
     created = request("/api/channels", {"csrf": session["csrf"], "name": "News", "input": "udp://239.0.0.1:1234", "output": "udp://239.0.0.2:1234"})[1]
     channels = request("/api/channels")[1]["channels"]
     assert created["id"] == channels[0]["id"] and channels[0]["name"] == "News"

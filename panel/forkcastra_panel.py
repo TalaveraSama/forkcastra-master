@@ -9,6 +9,8 @@ import secrets
 import sqlite3
 import subprocess
 import time
+import platform
+import shutil
 from http import cookies
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -97,6 +99,36 @@ def render_config(rows):
     return "\n".join(lines)
 
 
+def system_info():
+    uptime = 0
+    memory_total = memory_available = 0
+    try:
+        uptime = int(float(Path("/proc/uptime").read_text().split()[0]))
+        values = {}
+        for line in Path("/proc/meminfo").read_text().splitlines():
+            key, value = line.split(":", 1)
+            values[key] = int(value.strip().split()[0]) * 1024
+        memory_total, memory_available = values.get("MemTotal", 0), values.get("MemAvailable", 0)
+    except (OSError, ValueError):
+        pass
+    disk = shutil.disk_usage("/")
+    try:
+        load = list(os.getloadavg())
+    except OSError:
+        load = [0, 0, 0]
+    return {"hostname": platform.node(), "kernel": platform.release(), "python": platform.python_version(),
+            "uptime": uptime, "load": load, "memory_total": memory_total,
+            "memory_used": max(0, memory_total - memory_available), "disk_total": disk.total,
+            "disk_used": disk.used}
+
+
+def playlist(rows):
+    lines = ["#EXTM3U"]
+    for name, output in rows:
+        lines.extend(["#EXTINF:-1,%s" % name.replace("\n", " "), output])
+    return "\n".join(lines) + "\n"
+
+
 def apply_channels():
     with connect() as db:
         rows = db.execute("SELECT id,name,input_url,output_url,enabled,input_type,adapter,delivery,frequency,polarization,symbolrate,pnr,lnb FROM channels ORDER BY id").fetchall()
@@ -179,7 +211,7 @@ class Handler(BaseHTTPRequestHandler):
             config = Path("/etc/forkcastra/forkcastra.lua")
             with connect() as db:
                 count = db.execute("SELECT count(*) FROM channels").fetchone()[0]
-            return self.json({"service": service_state(), "config": str(config), "configured": config.exists(), "version": "4.0.282-5", "channels": count})
+            return self.json({"service": service_state(), "config": str(config), "configured": config.exists(), "version": "4.0.282-6", "channels": count})
         if self.path == "/api/channels":
             if not self.session():
                 return self.json({"error": "unauthorized"}, 401)
@@ -194,9 +226,28 @@ class Handler(BaseHTTPRequestHandler):
             for directory in sorted(Path("/dev/dvb").glob("adapter*")):
                 try: number = int(directory.name.replace("adapter", ""))
                 except ValueError: continue
-                frontends = sorted(item.name for item in directory.glob("frontend*"))
-                adapters.append({"adapter": number, "path": str(directory), "frontends": frontends})
+                nodes = sorted(item.name for item in directory.iterdir())
+                frontends = [name for name in nodes if name.startswith("frontend")]
+                adapters.append({"adapter": number, "path": str(directory), "frontends": frontends, "nodes": nodes})
             return self.json({"adapters": adapters})
+        if self.path in ("/api/outputs", "/playlist.m3u", "/playlist.m3u8"):
+            if not self.session():
+                return self.json({"error": "unauthorized"}, 401)
+            with connect() as db:
+                rows = db.execute("SELECT name,output_url FROM channels WHERE enabled=1 ORDER BY id").fetchall()
+            if self.path == "/api/outputs":
+                return self.json({"outputs": [{"name": row[0], "url": row[1], "protocol": row[1].split(":", 1)[0].upper()} for row in rows]})
+            data = playlist(rows).encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/vnd.apple.mpegurl; charset=utf-8")
+            self.send_header("Content-Disposition", "attachment; filename=forkcastra%s" % (".m3u8" if self.path.endswith("m3u8") else ".m3u"))
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            return self.wfile.write(data)
+        if self.path == "/api/system":
+            if not self.session():
+                return self.json({"error": "unauthorized"}, 401)
+            return self.json(system_info())
         self.send_error(404)
 
     def do_POST(self):
