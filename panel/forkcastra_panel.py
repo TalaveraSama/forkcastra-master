@@ -232,7 +232,7 @@ class Handler(BaseHTTPRequestHandler):
             config = Path("/etc/forkcastra/forkcastra.lua")
             with connect() as db:
                 count = db.execute("SELECT count(*) FROM channels").fetchone()[0]
-            return self.json({"service": service_state(), "config": str(config), "configured": config.exists(), "version": "4.0.282-8", "channels": count})
+            return self.json({"service": service_state(), "config": str(config), "configured": config.exists(), "version": "4.0.282-9", "channels": count})
         if self.path == "/api/channels":
             if not self.session():
                 return self.json({"error": "unauthorized"}, 401)

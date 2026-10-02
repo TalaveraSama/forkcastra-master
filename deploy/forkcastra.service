@@ -25,7 +25,9 @@ ProtectHome=true
 ProtectKernelTunables=true
 ProtectKernelModules=true
 ProtectControlGroups=true
-ProtectClock=true
+# ProtectClock creates a device cgroup allowlist on systemd 245 (Ubuntu 20.04)
+# that also blocks /dev/dvb with EPERM, so it must remain disabled.
+ProtectClock=false
 RestrictSUIDSGID=true
 RestrictRealtime=true
 LockPersonality=true

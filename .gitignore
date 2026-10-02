@@ -7,3 +7,6 @@
 /config.h
 /packages/
 *.sublime-workspace
+
+__pycache__/
+*.py[cod]
