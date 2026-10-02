@@ -139,6 +139,21 @@ static void fe_event(dvb_fe_t *fe)
  *
  */
 
+static void fe_export_status(dvb_fe_t *fe)
+{
+    char path[128], temporary[136];
+    snprintf(path, sizeof(path), "/run/forkcastra/dvb-%d-%d.json", fe->adapter, fe->device);
+    snprintf(temporary, sizeof(temporary), "%s.tmp", path);
+    FILE *status_file = fopen(temporary, "w");
+    if(!status_file)
+        return;
+    fprintf(status_file, "{\"adapter\":%d,\"device\":%d,\"lock\":%s,\"signal\":%d,\"snr\":%d,\"ber\":%d,\"unc\":%d}\n",
+            fe->adapter, fe->device, fe->lock ? "true" : "false",
+            fe->signal, fe->snr, fe->ber, fe->unc);
+    fclose(status_file);
+    rename(temporary, path);
+}
+
 static void fe_status(dvb_fe_t *fe)
 {
     fe_status_t fe_status;
@@ -152,6 +167,7 @@ static void fe_status(dvb_fe_t *fe)
     if(!fe->lock)
     {
         fe->do_retune = 1;
+        fe_export_status(fe);
         return;
     }
 
@@ -170,6 +186,8 @@ static void fe_status(dvb_fe_t *fe)
 
     if(ioctl(fe->fe_fd, FE_READ_UNCORRECTED_BLOCKS, &fe->unc) != 0)
         fe->unc = -2;
+
+    fe_export_status(fe);
 }
 
 /*

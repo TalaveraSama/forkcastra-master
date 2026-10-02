@@ -53,7 +53,7 @@ with tempfile.TemporaryDirectory() as tmp:
     rendered = panel.render_config([(1, "News", "udp://239.0.0.1:1234", "udp://239.0.0.2:1234", 1, "url", None, None, None, None, None, None, None)])
     assert 'name = "News"' in rendered and "make_channel" in rendered
     dvb = panel.render_config([(2, "DVB S2", "dvb://adapter0", "udp://239.1.1.1:1234", 1, "dvb", 0, "S2", 11538, "H", 30000, 101, "9750:10600:11700")])
-    assert 'type = "S2"' in dvb and "adapter = 0" in dvb and "pnr = 101" in dvb
+    assert 'type = "S2"' in dvb and "adapter = 0" in dvb and "pnr=101" in dvb and "dvb_tune" in dvb
     delete = urllib.request.Request(base + "/api/channels/%d" % created["id"], method="DELETE", headers={"X-CSRF-Token": session["csrf"]})
     assert json.loads(opener.open(delete).read())["ok"]
     assert request("/api/logout", {"csrf": session["csrf"]})[1]["ok"]
