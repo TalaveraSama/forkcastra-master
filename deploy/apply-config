@@ -1,0 +1,8 @@
+#!/bin/sh
+set -eu
+SOURCE=/var/lib/forkcastra/generated.lua
+TARGET=/etc/forkcastra/forkcastra.lua
+[ -f "$SOURCE" ] || { echo "generated configuration is missing" >&2; exit 1; }
+[ "$(stat -c %U "$SOURCE")" = forkcastra ] || { echo "invalid configuration owner" >&2; exit 1; }
+install -o root -g forkcastra -m 0640 "$SOURCE" "$TARGET"
+systemctl restart forkcastra.service

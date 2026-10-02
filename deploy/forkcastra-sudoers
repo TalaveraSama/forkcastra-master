@@ -1,0 +1,2 @@
+# Panel may only install its generated configuration and restart Forkcastra.
+forkcastra ALL=(root) NOPASSWD: /usr/lib/forkcastra/apply-config

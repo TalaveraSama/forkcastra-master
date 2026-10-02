@@ -1,4 +1,4 @@
-# Forkcastra 4.0.282-3 — versión instalable inicial
+# Forkcastra 4.0.282-4 — versión instalable inicial
 
 Esta versión está destinada a pruebas controladas en Ubuntu Server 20.04, 22.04 y 24.04 amd64.
 
@@ -20,7 +20,7 @@ Astra y Forkcastra pueden estar instalados al mismo tiempo, pero no deben usar s
 ## Instalar
 
 ```sh
-sudo apt install ./forkcastra_4.0.282-3_amd64.deb
+sudo apt install ./forkcastra_4.0.282-4_amd64.deb
 sudoedit /etc/forkcastra/forkcastra.lua
 sudo systemctl start forkcastra
 sudo systemctl status forkcastra --no-pager
@@ -44,7 +44,7 @@ sudo delgroup forkcastra
 
 ## Limitaciones
 
-- Primera versión de validación; incluye un panel web inicial con autenticación y estado; la gestión visual de canales aún está pendiente.
+- Primera versión de validación; incluye panel autenticado, gestión de canales UDP/HTTP/file/DVB, generación segura de Lua y aplicación controlada mediante systemd.
 - El HTTP heredado no debe utilizarse como panel administrativo expuesto a Internet.
 - Debe probarse con los adaptadores DVB y flujos multicast reales antes de producción.
 - El módulo `newcamd` sólo se incluye cuando el entorno de compilación tiene cabeceras OpenSSL compatibles.

@@ -44,6 +44,13 @@ with tempfile.TemporaryDirectory() as tmp:
     session = request("/api/session")[1]
     assert session["authenticated"] is True
     assert request("/api/status")[0] == 200
+    created = request("/api/channels", {"csrf": session["csrf"], "name": "News", "input": "udp://239.0.0.1:1234", "output": "udp://239.0.0.2:1234"})[1]
+    channels = request("/api/channels")[1]["channels"]
+    assert created["id"] == channels[0]["id"] and channels[0]["name"] == "News"
+    rendered = panel.render_config([(1, "News", "udp://239.0.0.1:1234", "udp://239.0.0.2:1234", 1)])
+    assert 'name = "News"' in rendered and "make_channel" in rendered
+    delete = urllib.request.Request(base + "/api/channels/%d" % created["id"], method="DELETE", headers={"X-CSRF-Token": session["csrf"]})
+    assert json.loads(opener.open(delete).read())["ok"]
     assert request("/api/logout", {"csrf": session["csrf"]})[1]["ok"]
     server.shutdown()
 
