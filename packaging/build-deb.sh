@@ -7,7 +7,7 @@ ARCH=${ARCH:-$(dpkg --print-architecture)}
 MAJOR=$(sed -n 's/^#define ASTRA_VERSION_MAJOR \([0-9][0-9]*\)$/\1/p' "$ROOT/version.h")
 MINOR=$(sed -n 's/^#define ASTRA_VERSION_MINOR \([0-9][0-9]*\)$/\1/p' "$ROOT/version.h")
 DEV=$(sed -n 's/^#define ASTRA_VERSION_DEV \([0-9][0-9]*\)$/\1/p' "$ROOT/version.h")
-VERSION=${VERSION:-"$MAJOR.$MINOR.$DEV-2"}
+VERSION=${VERSION:-"$MAJOR.$MINOR.$DEV-3"}
 PKG="forkcastra_${VERSION}_${ARCH}"
 STAGE="$OUT/.stage-$PKG"
 DEB="$OUT/$PKG.deb"
@@ -20,19 +20,22 @@ fi
 [ -x "$ROOT/astra" ] || { echo "astra build output is missing" >&2; exit 1; }
 
 rm -rf "$STAGE"
-mkdir -p "$STAGE/DEBIAN" "$STAGE/usr/bin" "$STAGE/usr/share/forkcastra" \
+mkdir -p "$STAGE/DEBIAN" "$STAGE/usr/bin" "$STAGE/usr/share/forkcastra" "$STAGE/usr/share/forkcastra/panel" \
     "$STAGE/usr/share/doc/forkcastra" "$STAGE/etc/forkcastra" \
     "$STAGE/lib/systemd/system" "$STAGE/var/lib/forkcastra" "$STAGE/var/log/forkcastra" "$OUT"
 
 install -m 0755 "$ROOT/astra" "$STAGE/usr/bin/forkcastra"
+install -m 0755 "$ROOT/panel/forkcastra_panel.py" "$STAGE/usr/bin/forkcastra-panel"
 install -m 0644 "$ROOT/scripts/stream.lua" "$STAGE/usr/share/forkcastra/stream.lua"
 install -m 0644 "$ROOT/scripts/analyze.lua" "$STAGE/usr/share/forkcastra/analyze.lua"
 install -m 0640 "$ROOT/deploy/forkcastra.lua.example" "$STAGE/etc/forkcastra/forkcastra.lua"
 install -m 0644 "$ROOT/deploy/forkcastra.service" "$STAGE/lib/systemd/system/forkcastra.service"
+install -m 0644 "$ROOT/deploy/forkcastra-panel.service" "$STAGE/lib/systemd/system/forkcastra-panel.service"
+install -m 0644 "$ROOT/panel/static/"* "$STAGE/usr/share/forkcastra/panel/"
 install -m 0644 "$ROOT/COPYING" "$STAGE/usr/share/doc/forkcastra/copyright"
 install -m 0644 "$ROOT/README.md" "$STAGE/usr/share/doc/forkcastra/README.md"
 install -m 0644 "$ROOT/docs/AUDITORIA_MODERNIZACION.md" "$STAGE/usr/share/doc/forkcastra/AUDITORIA_MODERNIZACION.md"
-install -m 0644 "$ROOT/docs/RELEASE_4.0.282-2.md" "$STAGE/usr/share/doc/forkcastra/RELEASE.md"
+install -m 0644 "$ROOT/docs/RELEASE_4.0.282-3.md" "$STAGE/usr/share/doc/forkcastra/RELEASE.md"
 
 INSTALLED_SIZE=$(du -sk "$STAGE" | cut -f1)
 cat > "$STAGE/DEBIAN/control" <<EOF
@@ -42,7 +45,7 @@ Section: net
 Priority: optional
 Architecture: $ARCH
 Maintainer: Forkcastra contributors
-Depends: libc6 (>= 2.31), adduser, systemd | systemd-sysv
+Depends: libc6 (>= 2.31), python3 (>= 3.8), adduser, systemd | systemd-sysv
 Installed-Size: $INSTALLED_SIZE
 Homepage: https://github.com/TalaveraSama/forkcastra-master
 Description: IPTV MPEG-TS processing engine based on Astra

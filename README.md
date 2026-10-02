@@ -51,9 +51,24 @@ The package installs as `/usr/bin/forkcastra`, uses
 therefore coexist with a vendor Astra 5.x installation. Do not configure both
 services to claim the same DVB adapter, TCP/UDP port or multicast output.
 
-The package enables the service for the next boot but deliberately does not
-start it during installation. The example configuration does not start any
-stream. Do not expose the legacy HTTP module as an administrative interface on
-an untrusted network. See
+The package enables the services for the next boot but deliberately does not
+start them during installation. Create the first panel administrator and start
+the services:
+
+```sh
+sudo -u forkcastra forkcastra-panel --create-admin admin
+sudo systemctl start forkcastra forkcastra-panel
+```
+
+The panel listens only on `127.0.0.1:8088` until a TLS reverse proxy is
+configured. For an initial remote test, use an SSH tunnel from your computer:
+
+```sh
+ssh -L 8088:127.0.0.1:8088 user@server
+```
+
+Then open `http://127.0.0.1:8088`. The example configuration does not start any
+stream. Do not expose the panel or legacy HTTP module directly on an untrusted
+network. See
 [`docs/AUDITORIA_MODERNIZACION.md`](docs/AUDITORIA_MODERNIZACION.md) for the
 panel architecture and security plan.

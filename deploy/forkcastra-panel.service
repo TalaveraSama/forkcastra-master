@@ -1,0 +1,22 @@
+[Unit]
+Description=Forkcastra administration panel
+After=network.target forkcastra.service
+
+[Service]
+Type=simple
+User=forkcastra
+Group=forkcastra
+ExecStart=/usr/bin/forkcastra-panel --bind 127.0.0.1 --port 8088
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+ReadWritePaths=/var/lib/forkcastra
+
+[Install]
+WantedBy=multi-user.target

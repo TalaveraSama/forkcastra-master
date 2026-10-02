@@ -27,7 +27,9 @@ jobs:
       - name: Build
         run: ./configure.sh && make -j2
       - name: Smoke test
-        run: ./tests/smoke.sh
+        run: |
+          ./tests/smoke.sh
+          python3 ./tests/panel_test.py
       - name: Build installable Debian package
         run: ./packaging/build-deb.sh
       - name: Inspect Debian package
