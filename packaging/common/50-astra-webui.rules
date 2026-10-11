@@ -1,0 +1,14 @@
+// Regla de polkit: permite al usuario del panel (astra) gestionar únicamente
+// la unidad astra.service a través de systemd, sin necesidad de sudo.
+//
+// Instalado en: /usr/share/polkit-1/rules.d/50-astra-webui.rules
+polkit.addRule(function(action, subject) {
+    if (action.id == "org.freedesktop.systemd1.manage-units" &&
+        subject.user == "astra") {
+        var unit = action.lookup("unit");
+        if (unit == "astra.service") {
+            return polkit.Result.YES;
+        }
+    }
+    return polkit.Result.NOT_HANDLED;
+});
