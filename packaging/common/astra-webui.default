@@ -1,0 +1,19 @@
+# Opciones de arranque del panel Astra WebUI.
+# Este fichero se lee como EnvironmentFile en astra-webui.service.
+
+# Fichero de configuración del panel
+# ASTRA_WEBUI_CONFIG=/etc/astra-webui/panel.json
+
+# Sobrescribir la dirección/puerto de escucha (equivale a panel.json)
+# ASTRA_WEBUI_LISTEN=0.0.0.0
+# ASTRA_WEBUI_PORT=8000
+
+# URL de la API del agente Lua
+# ASTRA_WEBUI_AGENT_URL=http://127.0.0.1:9977
+
+# Nivel de log: DEBUG, INFO, WARNING, ERROR
+# ASTRA_WEBUI_LOG_LEVEL=INFO
+
+# Contraseña del usuario 'admin' la primera vez que se arranca (si users.json
+# está vacío). Si se deja vacío se usa /etc/astra-webui/initial-admin-password.
+# ASTRA_WEBUI_ADMIN_PASSWORD=
