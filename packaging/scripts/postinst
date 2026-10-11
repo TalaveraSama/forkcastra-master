@@ -1,0 +1,200 @@
+#!/bin/sh
+# postinst de astra-webui
+# Se ejecuta tras descomprimir el paquete. No usa debconf a propósito: todo lo
+# que hace falta (usuario, token, contraseña inicial) se muestra por consola.
+
+set -e
+
+ACTION="$1"
+
+APP_USER="astra"
+APP_GROUP="astra"
+DATA_DIR="/var/lib/astra-webui"
+ETC_DIR="/etc/astra-webui"
+LOG_DIR="/var/log/astra"
+PANEL_LOG_DIR="/var/log/astra-webui"
+REC_DIR="$DATA_DIR/recordings"
+
+# ---------------------------------------------------------------------------
+# ayudas
+# ---------------------------------------------------------------------------
+
+log() { echo "[astra-webui] $*"; }
+
+create_user() {
+    if ! getent group "$APP_GROUP" >/dev/null 2>&1; then
+        addgroup --system "$APP_GROUP" >/dev/null 2>&1 || groupadd -r "$APP_GROUP"
+        log "grupo '$APP_GROUP' creado"
+    fi
+    if ! getent passwd "$APP_USER" >/dev/null 2>&1; then
+        adduser --system --ingroup "$APP_GROUP" --home "$DATA_DIR" \
+                --no-create-home --disabled-password --disabled-login \
+                --gecos "Astra streaming server" "$APP_USER" >/dev/null 2>&1 \
+            || useradd -r -g "$APP_GROUP" -d "$DATA_DIR" -s /usr/sbin/nologin "$APP_USER"
+        log "usuario '$APP_USER' creado"
+    fi
+    # acceso a tarjetas DVB y audio
+    for grp in video audio; do
+        if getent group "$grp" >/dev/null 2>&1; then
+            adduser "$APP_USER" "$grp" >/dev/null 2>&1 || usermod -a -G "$grp" "$APP_USER" || true
+        fi
+    done
+}
+
+create_dirs() {
+    install -d -m 0750 -o "$APP_USER" -g "$APP_GROUP" "$DATA_DIR"
+    install -d -m 0750 -o "$APP_USER" -g "$APP_GROUP" "$REC_DIR"
+    install -d -m 0750 -o "$APP_USER" -g "$APP_GROUP" "$LOG_DIR"
+    install -d -m 0750 -o "$APP_USER" -g "$APP_GROUP" "$PANEL_LOG_DIR"
+    install -d -m 0750 -o root -g "$APP_GROUP" "$ETC_DIR"
+}
+
+create_token() {
+    TOKEN_FILE="$ETC_DIR/agent.token"
+    if [ ! -s "$TOKEN_FILE" ]; then
+        if [ -r /dev/urandom ]; then
+            head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n' > "$TOKEN_FILE"
+        else
+            openssl rand -hex 32 > "$TOKEN_FILE"
+        fi
+        chown root:"$APP_GROUP" "$TOKEN_FILE"
+        chmod 0640 "$TOKEN_FILE"
+        log "token del agente generado en $TOKEN_FILE"
+    fi
+}
+
+create_data_files() {
+    [ -s "$DATA_DIR/channels.json" ] || \
+        printf '%s\n' '{"version":1,"channels":[]}' > "$DATA_DIR/channels.json"
+    [ -s "$DATA_DIR/auth.json" ] || \
+        printf '%s\n' '{"version":1,"enabled":true,"tokens":{}}' > "$DATA_DIR/auth.json"
+    [ -s "$DATA_DIR/users.json" ] || \
+        printf '%s\n' '{"version":1,"users":[]}' > "$DATA_DIR/users.json"
+    [ -s "$DATA_DIR/dvb.json" ] || \
+        printf '%s\n' '{"version":1,"satellites":[],"scans":[]}' > "$DATA_DIR/dvb.json"
+    for f in channels.json auth.json users.json dvb.json; do
+        chown "$APP_USER":"$APP_GROUP" "$DATA_DIR/$f"
+        chmod 0640 "$DATA_DIR/$f"
+    done
+    [ -e "$DATA_DIR/history.json" ] || : > "$DATA_DIR/history.json"
+    [ -e "$DATA_DIR/sessions.json" ] || : > "$DATA_DIR/sessions.json"
+    [ -e "$DATA_DIR/audit.jsonl" ] || : > "$DATA_DIR/audit.jsonl"
+    for f in history.json sessions.json audit.jsonl; do
+        chown "$APP_USER":"$APP_GROUP" "$DATA_DIR/$f"
+        chmod 0640 "$DATA_DIR/$f"
+    done
+}
+
+initial_password() {
+    PASS_FILE="$ETC_DIR/initial-admin-password"
+    if [ -s "$PASS_FILE" ]; then
+        INITIAL_PASSWORD="$(cat "$PASS_FILE")"
+        return
+    fi
+    if [ -r /dev/urandom ]; then
+        INITIAL_PASSWORD="$(head -c 12 /dev/urandom | od -An -tx1 | tr -d ' \n')"
+    else
+        INITIAL_PASSWORD="$(openssl rand -hex 12)"
+    fi
+    printf '%s' "$INITIAL_PASSWORD" > "$PASS_FILE"
+    chown root:"$APP_GROUP" "$PASS_FILE"
+    chmod 0640 "$PASS_FILE"
+}
+
+legacy_config() {
+    # El agente web pasa a ser el script principal de astra: si había un
+    # astra.conf antiguo se guarda una copia para no perderlo.
+    if [ -f /etc/astra/astra.conf ] && [ ! -f /etc/astra/astra.conf.pre-webui ]; then
+        cp -a /etc/astra/astra.conf /etc/astra/astra.conf.pre-webui
+        log "NOTA: /etc/astra/astra.conf se conserva como astra.conf.pre-webui"
+        log "      (el panel gestiona ahora los canales desde /var/lib/astra-webui/channels.json)"
+    fi
+}
+
+permissions() {
+    chown root:root /usr/bin/astra-4.0 2>/dev/null || true
+    chmod 0755 /usr/bin/astra-4.0 2>/dev/null || true
+
+    # El panel guarda sus ajustes y sincroniza el puerto de streaming en
+    # agent.json, así que ambos conffiles deben ser escribibles por 'astra'.
+    for cfg_file in panel.json agent.json; do
+        if [ -f "$ETC_DIR/$cfg_file" ]; then
+            chown "$APP_USER":"$APP_GROUP" "$ETC_DIR/$cfg_file"
+            chmod 0640 "$ETC_DIR/$cfg_file"
+        fi
+    done
+
+    if [ -f /etc/sudoers.d/astra-webui ]; then
+        chown root:root /etc/sudoers.d/astra-webui
+        chmod 0440 /etc/sudoers.d/astra-webui
+        if command -v visudo >/dev/null 2>&1; then
+            if ! visudo -c -f /etc/sudoers.d/astra-webui >/dev/null 2>&1; then
+                log "AVISO: la regla sudoers no es válida; se desactiva el control de servicio por sudo"
+                rm -f /etc/sudoers.d/astra-webui
+            fi
+        else
+            log "AVISO: no hay 'visudo'; se conserva /etc/sudoers.d/astra-webui sin validar"
+        fi
+    fi
+}
+
+# ---------------------------------------------------------------------------
+# acciones
+# ---------------------------------------------------------------------------
+
+case "$ACTION" in
+    configure)
+        create_user
+        create_dirs
+        create_token
+        create_data_files
+        initial_password
+        legacy_config
+        permissions
+
+        if command -v systemctl >/dev/null 2>&1; then
+            systemctl daemon-reload >/dev/null 2>&1 || true
+            systemctl enable astra.service >/dev/null 2>&1 || true
+            systemctl enable astra-webui.service >/dev/null 2>&1 || true
+            systemctl restart astra.service >/dev/null 2>&1 || true
+            systemctl restart astra-webui.service >/dev/null 2>&1 || true
+        fi
+
+        PORT="$(python3 - <<'PY' 2>/dev/null || echo 8000
+import json
+try:
+    with open('/etc/astra-webui/panel.json') as fh:
+        print(json.load(fh).get('port', 8000))
+except Exception:
+    print(8000)
+PY
+)"
+
+        cat <<EOF
+
+============================================================
+ Astra WebUI instalado
+------------------------------------------------------------
+ Panel:      http://<IP-del-servidor>:$PORT
+ Usuario:    admin
+ Contraseña: $INITIAL_PASSWORD
+
+ (también en $ETC_DIR/initial-admin-password; bórralo tras
+  el primer acceso y cambia la contraseña en Ajustes)
+
+ Servicios:  systemctl status astra astra-webui
+ Logs:       journalctl -u astra -f
+ Cliente TS: http://<IP>:8001/live/<token>/<canal>.ts
+============================================================
+EOF
+        ;;
+
+    abort-upgrade|abort-remove|abort-deconfigure)
+        ;;
+
+    *)
+        log "postinst llamado con acción desconocida: $ACTION"
+        ;;
+esac
+
+exit 0
