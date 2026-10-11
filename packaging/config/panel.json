@@ -1,0 +1,53 @@
+{
+  "listen": "0.0.0.0",
+  "port": 8000,
+  "base_url": "",
+  "session_hours": 12,
+  "stream": {
+    "host": "",
+    "port": 8001,
+    "public_base": ""
+  },
+  "agent": {
+    "url": "http://127.0.0.1:9977",
+    "token_file": "/etc/astra-webui/agent.token",
+    "timeout": 4
+  },
+  "paths": {
+    "astra_bin": "/usr/bin/astra",
+    "astra_log": "/var/log/astra/astra.log",
+    "panel_log": "/var/log/astra-webui/panel.log",
+    "channels": "/var/lib/astra-webui/channels.json",
+    "auth": "/var/lib/astra-webui/auth.json",
+    "users": "/var/lib/astra-webui/users.json",
+    "sessions": "/var/lib/astra-webui/sessions.json",
+    "dvb": "/var/lib/astra-webui/dvb.json",
+    "audit": "/var/lib/astra-webui/audit.jsonl",
+    "history": "/var/lib/astra-webui/history.json",
+    "recordings": "/var/lib/astra-webui/recordings",
+    "media": "/srv/media"
+  },
+  "service_control": {
+    "enabled": true,
+    "unit": "astra.service",
+    "sudo": "/usr/bin/sudo",
+    "systemctl": "/usr/bin/systemctl"
+  },
+  "security": {
+    "max_login_attempts": 5,
+    "login_window": 300,
+    "trust_proxy": false,
+    "allowed_networks": []
+  },
+  "ui": {
+    "title": "Astra WebUI",
+    "language": "es",
+    "refresh_ms": 2000,
+    "theme": "dark"
+  },
+  "history": {
+    "points": 720,
+    "interval": 5
+  },
+  "web_dir": "/usr/share/astra-webui/web"
+}
