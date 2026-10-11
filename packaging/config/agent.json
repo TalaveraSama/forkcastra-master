@@ -1,0 +1,27 @@
+{
+  "data_dir": "/var/lib/astra-webui",
+  "channels_file": "/var/lib/astra-webui/channels.json",
+  "auth_file": "/var/lib/astra-webui/auth.json",
+  "streams_script": "/etc/astra/scripts-4.0/stream.lua",
+  "reload_interval": 3,
+  "auto_reload": true,
+  "log_psi_info": false,
+  "log": {
+    "filename": "/var/log/astra/astra.log",
+    "stdout": false,
+    "debug": false,
+    "syslog": ""
+  },
+  "control": {
+    "addr": "127.0.0.1",
+    "port": 9977,
+    "token_file": "/etc/astra-webui/agent.token"
+  },
+  "stream": {
+    "enabled": true,
+    "addr": "0.0.0.0",
+    "port": 8001,
+    "cors": true,
+    "public_base": ""
+  }
+}

@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <meta name="description" content="Panel de administración Astra WebUI para el servidor de streaming Astra">
+  <title>Astra WebUI</title>
+  <link rel="icon" type="image/svg+xml" href="img/favicon.svg">
+  <link rel="stylesheet" href="css/app.css">
+    <link rel="stylesheet" href="css/cesbo.css">
+</head>
+<body>
+  <!-- Pantalla de acceso (sin sesión) -->
+  <div id="login-screen" class="login" hidden>
+    <form id="login-form" class="login__card" autocomplete="on">
+      <div class="login__brand">
+        <img src="img/logo.svg" alt="Astra WebUI" width="220" height="52">
+      </div>
+      <p class="login__subtitle" data-i18n="login.subtitle">Panel de control del servidor Astra</p>
+
+      <div class="alert alert--error" id="login-error" role="alert" hidden></div>
+
+      <label class="field">
+        <span class="field__label" data-i18n="login.username">Usuario</span>
+        <input class="input" id="login-username" name="username" type="text" autocomplete="username"
+               spellcheck="false" required data-i18n-attr="placeholder:login.username_ph">
+      </label>
+
+      <label class="field">
+        <span class="field__label" data-i18n="login.password">Contraseña</span>
+        <input class="input" id="login-password" name="password" type="password"
+               autocomplete="current-password" required data-i18n-attr="placeholder:login.password_ph">
+      </label>
+
+      <button class="btn btn--primary btn--block" id="login-submit" type="submit">
+        <span data-i18n="login.submit">Entrar</span>
+      </button>
+
+      <p class="login__hint" data-i18n="login.hint">
+        La contraseña inicial del usuario <code>admin</code> aparece en el log del panel.
+      </p>
+      <p class="login__version"><span id="login-version"></span></p>
+    </form>
+  </div>
+
+  <!-- Aplicación autenticada -->
+  <div id="app" class="app" hidden>
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar__brand">
+        <img src="img/logo.svg" alt="Astra WebUI" width="180" height="42">
+      </div>
+      <nav class="nav" id="nav" aria-label="Astra WebUI"></nav>
+      <div class="sidebar__footer">
+        <div class="sidebar__status" id="sidebar-status"></div>
+        <button class="btn btn--ghost btn--sm" id="logout-btn" type="button">
+          <span aria-hidden="true">⎋</span> <span data-i18n="nav.logout">Salir</span>
+        </button>
+      </div>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <button class="btn btn--ghost btn--icon" id="menu-btn" type="button"
+                aria-label="Menú" data-i18n-attr="aria-label:nav.menu">☰</button>
+        <div class="topbar__titles">
+          <h1 class="topbar__title" id="page-title">Astra WebUI</h1>
+          <p class="topbar__subtitle" id="page-subtitle"></p>
+        </div>
+        <div class="topbar__right">
+          <span class="badge" id="agent-badge" title=""></span>
+          <label class="lang">
+            <span class="sr-only" data-i18n="settings.language">Idioma</span>
+            <select class="input input--sm" id="lang-select">
+              <option value="es">ES</option>
+              <option value="en">EN</option>
+            </select>
+          </label>
+          <div class="user-chip" id="user-chip"></div>
+        </div>
+      </header>
+
+      <main class="content" id="view" tabindex="-1"></main>
+
+      <footer class="footer">
+        <span id="footer-info"></span>
+        <span id="footer-agent"></span>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Aviso de agente caído (bloqueante, informativo) -->
+  <div id="alert-layer" class="alert-layer" aria-live="polite"></div>
+
+  <!-- Contenedores de diálogos y avisos -->
+  <div id="modal-root"></div>
+  <div id="toast-root" class="toasts" aria-live="polite" aria-atomic="false"></div>
+
+  <!-- Indicador de carga global -->
+  <div id="loading" class="loading" hidden>
+    <div class="spinner" role="status" data-i18n-attr="aria-label:common.loading"></div>
+  </div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
