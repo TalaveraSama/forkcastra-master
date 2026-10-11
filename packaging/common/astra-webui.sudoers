@@ -1,0 +1,12 @@
+# Permite al usuario del panel reiniciar únicamente el servicio de astra.
+# Es la alternativa a la regla de polkit (packaging/common/50-astra-webui.rules).
+#
+# Instalado en: /etc/sudoers.d/astra-webui (modo 0440, root:root)
+astra ALL=(root) NOPASSWD: /bin/systemctl start astra.service, \
+                           /bin/systemctl stop astra.service, \
+                           /bin/systemctl restart astra.service, \
+                           /bin/systemctl is-active astra.service, \
+                           /usr/bin/systemctl start astra.service, \
+                           /usr/bin/systemctl stop astra.service, \
+                           /usr/bin/systemctl restart astra.service, \
+                           /usr/bin/systemctl is-active astra.service
