@@ -1,0 +1,42 @@
+[Unit]
+Description=Astra 4 streaming server (forkcastra-master) + agente Astra WebUI
+Documentation=file:///usr/share/doc/astra-webui/INSTALL.md
+After=network-online.target
+Wants=network-online.target
+Before=astra-webui.service
+
+[Service]
+Type=simple
+User=astra
+Group=astra
+SupplementaryGroups=video audio
+WorkingDirectory=/var/lib/astra-webui
+ExecStart=/usr/bin/astra /usr/share/astra-webui/agent/agent.lua /etc/astra-webui/agent.json
+Restart=always
+RestartSec=3
+TimeoutStopSec=25
+KillSignal=SIGTERM
+
+# Puertos privilegiados (si se configura el streaming por debajo de 1024)
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+
+# Endurecimiento
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=true
+PrivateTmp=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+ReadWritePaths=/var/lib/astra-webui /var/log/astra /run
+
+# El core necesita muchos descriptores con cientos de clientes
+LimitNOFILE=65536
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=astra
+
+[Install]
+WantedBy=multi-user.target
