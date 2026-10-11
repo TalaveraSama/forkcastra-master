@@ -1,0 +1,239 @@
+name: release
+
+# Crea una release con los paquetes .deb ya construidos.
+#
+#   * al empujar una etiqueta (git tag v4.0.282-10 && git push origin v4.0.282-10)
+#   * o a mano: pestaÃ±a Actions â†’ release â†’ Run workflow â†’ escribe la etiqueta
+#
+# Los .deb se compilan en Ubuntu (20.04 para mÃ¡xima compatibilidad y 22.04 nativo),
+# asÃ­ que no hace falta ningÃºn compilador en tu equipo.
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Etiqueta de la release (por ejemplo v4.0.282-10)'
+        required: true
+        default: 'v4.0.282-10'
+      fork_url:
+        description: 'Repositorio del fork (si el cÃ³digo no estÃ¡ en este repositorio)'
+        required: false
+        default: 'https://github.com/TalaveraSama/forkcastra-master.git'
+      revision:
+        description: 'RevisiÃ³n Debian del paquete (4.0.282-<revisiÃ³n>)'
+        required: false
+        default: '16'
+
+permissions:
+  contents: write
+
+jobs:
+  deb:
+    name: .deb ${{ matrix.name }}
+    runs-on: ${{ matrix.runner }}
+    container: ${{ matrix.container }}
+    continue-on-error: ${{ matrix.optional }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Ubuntu 20.04: el binario resultante funciona en 20.04, 22.04 y 24.04
+          - name: amd64-ubuntu20.04
+            runner: ubuntu-22.04
+            container: ubuntu:20.04
+            arch: amd64
+            optional: false
+          # Ubuntu 22.04 nativo (binario de esa versiÃ³n exacta)
+          - name: amd64-ubuntu22.04
+            runner: ubuntu-22.04
+            container: ''
+            arch: amd64
+            optional: false
+          # ARM64 (runners arm; si no estÃ¡n disponibles, el resto sigue adelante)
+          - name: arm64-ubuntu20.04
+            runner: ubuntu-22.04-arm
+            container: ubuntu:20.04
+            arch: arm64
+            optional: true
+
+    steps:
+      # los contenedores mÃ­nimos no traen git y actions/checkout lo necesita
+      - name: Preparar el contenedor
+        if: matrix.container != ''
+        run: |
+          apt-get update -qq
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            git ca-certificates
+
+      - uses: actions/checkout@v4
+
+      - name: Instalar dependencias
+        run: |
+          # dentro de un contenedor ya somos root; en el runner hace falta sudo
+          SUDO=""
+          if [ "${{ matrix.container }}" = "" ]; then SUDO="sudo"; fi
+          $SUDO apt-get update -qq
+          # libssl-dev es imprescindible para que el núcleo compile el módulo newcamd
+          # (CAM por tarjeta). Sin él, configure.sh lo desactiva en silencio.
+          DEBIAN_FRONTEND=noninteractive $SUDO apt-get install -y --no-install-recommends \
+            build-essential python3 ca-certificates git xz-utils gzip tar file dpkg-dev libssl-dev
+
+      - name: Localizar el cÃ³digo del fork
+        id: fork
+        run: |
+          if [ -f version.h ]; then
+            echo "dir=." >> "$GITHUB_OUTPUT"
+            echo "El repositorio ES el fork (fuentes en la raÃ­z)"
+          elif [ -f repo/tree/version.h ]; then
+            echo "dir=repo/tree" >> "$GITHUB_OUTPUT"
+            echo "Fuentes del fork en repo/tree"
+          else
+            git clone --depth 1 "${{ inputs.fork_url || 'https://github.com/TalaveraSama/forkcastra-master.git' }}" /tmp/fork
+            echo "dir=/tmp/fork" >> "$GITHUB_OUTPUT"
+            echo "Fuentes del fork clonadas en /tmp/fork"
+          fi
+          # por si el fork no trae el permiso de ejecuciÃ³n en sus scripts
+          chmod +x ./configure.sh ./commit.sh 2>/dev/null || true
+
+      - name: Construir el paquete completo (nÃºcleo + agente + panel)
+        run: |
+          # compilaciÃ³n PORTABLE: no se usa la CPU de este runner para -march, asÃ­ que
+          # el binario arranca en cualquier x86-64 (con -march=native daba SIGILL)
+          bash ./packaging/build-deb.sh --source "${{ steps.fork.outputs.dir }}" \
+            --out dist --arch ${{ matrix.arch }} --revision "${{ inputs.revision || '16' }}" -v
+
+      - name: Verificar el paquete
+        run: |
+          for deb in dist/astra-webui_*.deb; do
+            python3 tools/build_deb.py --verify "$deb"
+            # validaciÃ³n con el dpkg del sistema: detecta archivos que apt rechaza
+            SUDO=""
+            if [ "${{ matrix.container }}" = "" ]; then SUDO="sudo"; fi
+            $SUDO dpkg --contents "$deb" > /dev/null
+            $SUDO dpkg --unpack "$deb"
+            $SUDO dpkg --purge --force-all astra-webui 2>/dev/null || true
+          done
+
+      - name: Construir el paquete sin nÃºcleo (arch all)
+        if: matrix.arch == 'amd64'
+        run: |
+          VERSION=$(python3 -c "import sys; sys.path.insert(0,'tools'); import deb_stage; print(deb_stage.PANEL_VERSION)")
+          python3 tools/deb_stage.py --root build/panel --no-core
+          python3 tools/build_deb.py --root build/panel \
+            --out "dist/astra-webui-panel_${VERSION}-1_all.deb" -v
+          echo "PANEL_VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Reunir los paquetes y el cÃ³digo fuente
+        run: |
+          mkdir -p assets
+          cp dist/*.deb assets/
+          if [ "${{ matrix.name }}" = "amd64-ubuntu20.04" ]; then
+            # el tarball se crea FUERA del Ã¡rbol que se archiva: si no, tar avisa de
+            # "file changed as we read it" y termina con error
+            tar --exclude-vcs --exclude='./var' --exclude='./build' --exclude='./dist' \
+                --exclude='./repo' --exclude='./assets' --exclude='__pycache__' \
+                --exclude='*.deb' \
+                -czf "/tmp/astra-webui-src.tar.gz" --transform 's,^\.,astra-webui,' .
+            mv "/tmp/astra-webui-src.tar.gz" \
+               "assets/astra-webui-${PANEL_VERSION:-1.0.0}-src.tar.gz"
+          fi
+          ls -l assets
+
+      - name: Construir el paquete de instalaciÃ³n sin Internet
+        if: matrix.name == 'amd64-ubuntu20.04'
+        run: |
+          # dentro van los .deb reciÃ©n compilados (con el nÃºcleo), el cÃ³digo y el instalador
+          python3 tools/make_offline_bundle.py --out assets --no-fork --arch amd64
+          ls -l assets
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: deb-${{ matrix.name }}
+          path: assets/*
+          if-no-files-found: error
+
+  release:
+    name: Publicar la release
+    needs: deb
+    if: ${{ !cancelled() && needs.deb.result == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Descargar los paquetes construidos
+        uses: actions/download-artifact@v4
+        with:
+          path: assets
+          merge-multiple: true
+
+      - name: Calcular las sumas de la release
+        run: |
+          # las sumas se calculan UNA vez, aquÃ­, sobre los ficheros que se van a subir:
+          # si cada trabajo calculara las suyas, al fusionar artefactos podrÃ­an no
+          # corresponderse con los ficheros finales
+          cd assets
+          cp ../packaging/online/instalar.sh . 2>/dev/null || true
+          : > SHA256SUMS
+          for f in *.deb *.tar.gz instalar.sh; do
+            if [ -f "$f" ] && [ "$f" != "SHA256SUMS" ]; then
+              sha256sum "$f" >> SHA256SUMS
+            fi
+          done
+          cat SHA256SUMS
+
+      - name: Determinar la etiqueta y las versiones
+        id: datos
+        run: |
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            TAG="${{ github.ref_name }}"
+          else
+            TAG="${{ inputs.tag }}"
+          fi
+          DEB=$(ls assets/astra-webui_*.deb 2>/dev/null | head -1 || true)
+          CORE=$(basename "${DEB:-astra-webui_4.0.282-1_amd64.deb}" | sed 's/^astra-webui_//; s/-1_.*$//')
+          PANEL=$(ls assets/astra-webui-panel_*.deb 2>/dev/null | head -1 || true)
+          VERSION=$(basename "${PANEL:-astra-webui-panel_1.0.0-1_all.deb}" | sed 's/^astra-webui-panel_//; s/-1_all.*$//')
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "core=$CORE" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "etiqueta=$TAG nÃºcleo=$CORE panel=$VERSION"
+          ls -l assets
+
+      - name: Preparar las notas de la release
+        run: |
+          sed -e "s/@@TAG@@/${{ steps.datos.outputs.tag }}/g" \
+              -e "s/@@CORE@@/${{ steps.datos.outputs.core }}/g" \
+              -e "s/@@VERSION@@/${{ steps.datos.outputs.version }}/g" \
+              docs/RELEASE-NOTES.md > release-notes.md
+          {
+            echo ""
+            echo "## Sumas SHA-256"
+            echo ""
+            echo '```'
+            cat assets/SHA256SUMS
+            echo '```'
+          } >> release-notes.md
+          head -20 release-notes.md
+
+      - name: Publicar en GitHub Releases
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.datos.outputs.tag }}"
+          TITLE="Astra WebUI $TAG"
+          FICHEROS="$(ls assets/*.deb assets/*.tar.gz 2>/dev/null || true)"
+          if [ -f assets/instalar.sh ]; then FICHEROS="$FICHEROS assets/instalar.sh"; fi
+          FICHEROS="$FICHEROS assets/SHA256SUMS"
+          echo "ficheros: $FICHEROS"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "La release $TAG ya existe: se actualizan los ficheros"
+            gh release upload "$TAG" $FICHEROS --clobber
+            gh release edit "$TAG" --title "$TITLE" --notes-file release-notes.md
+          else
+            gh release create "$TAG" $FICHEROS \
+              --title "$TITLE" --notes-file release-notes.md --target "$GITHUB_SHA"
+          fi
+          gh release view "$TAG"
