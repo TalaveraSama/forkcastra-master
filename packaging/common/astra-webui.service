@@ -1,0 +1,36 @@
+[Unit]
+Description=Astra WebUI — panel administrativo web
+Documentation=file:///usr/share/doc/astra-webui/INSTALL.md
+After=network-online.target astra.service
+Wants=network-online.target
+PartOf=astra.service
+
+[Service]
+Type=simple
+User=astra
+Group=astra
+WorkingDirectory=/var/lib/astra-webui
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONPATH=/usr/share/astra-webui/panel
+EnvironmentFile=-/etc/default/astra-webui
+ExecStart=/usr/bin/python3 -m astra_webui --config /etc/astra-webui/panel.json
+Restart=always
+RestartSec=3
+TimeoutStopSec=15
+
+# Endurecimiento. No se activa NoNewPrivileges porque el panel puede necesitar
+# 'sudo -n systemctl restart astra.service' (alternativa al permiso de polkit).
+ProtectSystem=full
+ProtectHome=true
+PrivateTmp=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+ReadWritePaths=/var/lib/astra-webui /var/log/astra /var/log/astra-webui /etc/astra-webui /run
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=astra-webui
+
+[Install]
+WantedBy=multi-user.target
