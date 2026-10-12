@@ -1,0 +1,26 @@
+# Artefactos de compilación y desarrollo
+build/
+dist/
+release/
+*.deb
+
+# Cachés de Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Directorio de trabajo del modo desarrollo (--dev) y del agente simulado
+var/
+
+# Ficheros temporales de las pruebas
+tools/_*.txt
+tools/_*.py
+
+# Editores
+.vscode/
+.idea/
+*.swp
+*~
+
+# Snapshot del fork (código de terceros; usa git clone para la versión actual)
+# repo/tree/ contiene el código de Astra tal cual se descargó
