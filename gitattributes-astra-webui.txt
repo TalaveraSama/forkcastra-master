@@ -1,0 +1,19 @@
+# Líneas para añadir a tu .gitattributes (junto a "* text=auto")
+#
+# Garantizan que los scripts y el código viajen siempre con saltos de línea LF
+# aunque se trabaje desde Windows. Sin esto, un `core.autocrlf=true` puede dejar
+# los .sh con CRLF en la copia de trabajo y romperlos en Linux con el clásico
+# "bad interpreter: /bin/sh^M".
+
+*.sh                text eol=lf
+*.lua               text eol=lf
+*.py                text eol=lf
+*.json              text eol=lf
+*.md                text eol=lf
+packaging/scripts/* text eol=lf
+tools/*             text eol=lf
+agent/*             text eol=lf
+panel/*             text eol=lf
+*.ps1               text eol=crlf
+*.deb               binary
+*.tar.gz            binary

@@ -1,0 +1,23 @@
+#!/bin/sh
+# prerm de astra-webui
+set -e
+
+ACTION="$1"
+
+case "$ACTION" in
+    remove|deconfigure)
+        if command -v systemctl >/dev/null 2>&1; then
+            systemctl stop astra-webui.service >/dev/null 2>&1 || true
+            systemctl disable astra-webui.service >/dev/null 2>&1 || true
+            if [ "$ACTION" = "remove" ]; then
+                systemctl stop astra.service >/dev/null 2>&1 || true
+                systemctl disable astra.service >/dev/null 2>&1 || true
+            fi
+        fi
+        ;;
+    upgrade|failed-upgrade)
+        # Al actualizar no se detienen los servicios: el reinicio lo hace postinst.
+        ;;
+esac
+
+exit 0
