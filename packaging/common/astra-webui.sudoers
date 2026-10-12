@@ -1,0 +1,47 @@
+# Permite al usuario del panel controlar los servicios de su entorno: astra (el
+# streaming), astra-webui (el propio panel) y OSCam/NCam + pcscd (la tarjeta).
+# Es la alternativa a la regla de polkit (packaging/common/50-astra-webui.rules).
+#
+# Instalado en: /etc/sudoers.d/astra-webui (modo 0440, root:root)
+Cmnd_Alias ASTRA_WEBUI_CTL = /bin/systemctl start astra.service, \
+                             /bin/systemctl stop astra.service, \
+                             /bin/systemctl restart astra.service, \
+                             /bin/systemctl is-active astra.service, \
+                             /bin/systemctl start astra-webui.service, \
+                             /bin/systemctl stop astra-webui.service, \
+                             /bin/systemctl restart astra-webui.service, \
+                             /bin/systemctl is-active astra-webui.service, \
+                             /bin/systemctl start oscam.service, \
+                             /bin/systemctl stop oscam.service, \
+                             /bin/systemctl restart oscam.service, \
+                             /bin/systemctl is-active oscam.service, \
+                             /bin/systemctl start ncam.service, \
+                             /bin/systemctl stop ncam.service, \
+                             /bin/systemctl restart ncam.service, \
+                             /bin/systemctl is-active ncam.service, \
+                             /bin/systemctl start pcscd.service, \
+                             /bin/systemctl stop pcscd.service, \
+                             /bin/systemctl restart pcscd.service, \
+                             /bin/systemctl is-active pcscd.service, \
+                             /usr/bin/systemctl start astra.service, \
+                             /usr/bin/systemctl stop astra.service, \
+                             /usr/bin/systemctl restart astra.service, \
+                             /usr/bin/systemctl is-active astra.service, \
+                             /usr/bin/systemctl start astra-webui.service, \
+                             /usr/bin/systemctl stop astra-webui.service, \
+                             /usr/bin/systemctl restart astra-webui.service, \
+                             /usr/bin/systemctl is-active astra-webui.service, \
+                             /usr/bin/systemctl start oscam.service, \
+                             /usr/bin/systemctl stop oscam.service, \
+                             /usr/bin/systemctl restart oscam.service, \
+                             /usr/bin/systemctl is-active oscam.service, \
+                             /usr/bin/systemctl start ncam.service, \
+                             /usr/bin/systemctl stop ncam.service, \
+                             /usr/bin/systemctl restart ncam.service, \
+                             /usr/bin/systemctl is-active ncam.service, \
+                             /usr/bin/systemctl start pcscd.service, \
+                             /usr/bin/systemctl stop pcscd.service, \
+                             /usr/bin/systemctl restart pcscd.service, \
+                             /usr/bin/systemctl is-active pcscd.service
+
+astra ALL=(root) NOPASSWD: ASTRA_WEBUI_CTL
